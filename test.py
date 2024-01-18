@@ -57,42 +57,46 @@ def main():
         ]
     )
 
-    # update budget table
+
+    # update tables
     @app.callback(
-        Output("budget-table", "data"),
-        Output("budget-table", "columns"),
-        Input("radio-buttons", "value"),
+        [
+            Output("budget-table", "data"),
+            Output("budget-table", "columns"),
+            Output("summary-table", "data"),
+            Output("hidden-div", "children"),
+        ],
+        [
+            Input("radio-buttons", "value"),
+            Input("hidden-div", "children"),
+        ],
+        prevent_initial_call=True  # This prevents the callback from running on app initialization
     )
-    def update_budget_table(button_chosen):
+    def update_tables(button_chosen, hidden_div_content):
         # read in csv of selected budget
         budget = pd.read_csv(f"./resources/{button_chosen.replace(' ', '_')}.csv")
-        # define columns, make them editable
-        columns = [{"name": col, "id": col, "editable": True} for col in budget.columns]
+        
+        # define columns for budget table
+        columns_budget = [{"name": col, "id": col, "editable": True} for col in budget.columns]
 
-        # format Price column
-        budget.Price = budget.Price.astype(float).map("${:,.2f}".format)
+        if hidden_div_content:
+            temp_data = pd.read_json(hidden_div_content, orient="split")
+            temp_data['Price'] = pd.to_numeric(temp_data['Price'].replace('[\$,]', '', regex=True), errors='coerce')
 
-        return [budget.to_dict("records"), columns]
+            budget.update(temp_data)
 
-    # update summary table
-    @app.callback(
-        Output("summary-table", "data"),
-        Output("hidden-div", "children"),
-        Input("budget-table", "data"),
-    )
-    def update_summary_table(current_data):
-        # convert current_data to dataframe
-        df = pd.DataFrame(current_data)
+        # strip dollar sign from Price column
+        budget['Price'] = pd.to_numeric(budget['Price'].replace('[\$,]', '', regex=True), errors='coerce')
 
-        # strip dollar sign (if extant) from Price column
-        df.Price = pd.to_numeric(df.Price.replace("[\$,]", "", regex=True), errors="coerce")
+        # format Price column with dollar sign
+        # budget['Price'] = budget['Price'].astype(float).map("${:,.2f}".format)
 
-        # call functions to calculate total, 30% buffer, and grand total
-        total = calc_total(df)
+        # calculate summary data
+        total = calc_total(budget)
         thirty_percent = calc_thirty_percent(total)
         grand_total = calc_grand_total(total, thirty_percent)
 
-        # create summary table
+        # create summary table data
         summary_data = pd.DataFrame(
             {
                 "Expense": ["Total", "30% Buffer", "Grand Total"],
@@ -105,13 +109,13 @@ def main():
             }
         ).to_dict("records")
 
-        # format Price column as currency
-        df.Price = df.Price.map("${:,.2f}".format)
-
         # update hidden_div with current_data
-        hidden_div_content = df.to_json(orient="split")
+        hidden_div_content = budget.to_json(orient="split")
 
-        return [summary_data, hidden_div_content]
+        # format Price column with dollar sign
+        budget['Price'] = budget['Price'].astype(float).map("${:,.2f}".format)
+
+        return [budget.to_dict("records"), columns_budget, summary_data, hidden_div_content]
 
     # download csv
     @app.callback(
@@ -128,12 +132,6 @@ def main():
 
             # append summary_df to budget_df
             df = pd.concat([budget_df, summary_df], ignore_index=True)
-
-            # strip dollar sign (if extant) from Price column
-            df.Price = pd.to_numeric(df.Price.replace("[\$,]", "", regex=True), errors="coerce")
-
-            # format Price column
-            df.Price = df.Price.astype(float).map("${:,.2f}".format)
 
             # convert combined dataframe to csv file
             csv_file = df.to_csv(index=False, encoding="utf-8")
