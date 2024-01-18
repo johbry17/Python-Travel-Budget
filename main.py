@@ -1,5 +1,6 @@
 # import dependencies
 from dash import Dash, dcc, html, dash_table, callback, Input, Output, State
+from dash.dash_table import FormatTemplate
 import pandas as pd
 
 
@@ -43,14 +44,14 @@ def main():
                 id="summary-table",
                 columns=[
                     {"name": "Expense", "id": "Expense"},
-                    {"name": "Price", "id": "Price"},
+                    {"name": "Price", "id": "Price", "type": "numeric", "format": FormatTemplate.money(2)},
                     {"name": "Notes", "id": "Notes"},
                 ],
             ),
             # div for storing temporary data
             html.Div(id="hidden-div", style={"display": "none"}),
             # save button
-            html.Button("Save", id="save-button", n_clicks=0),
+            html.Button("Save and Download", id="save-button", n_clicks=0),
             # download link
             dcc.Download(id="download-link"),
         ]
@@ -67,6 +68,13 @@ def main():
         budget = pd.read_csv(f"./resources/{button_chosen.replace(' ', '_')}.csv")
         # define columns, make them editable
         columns = [{"name": col, "id": col, "editable": True} for col in budget.columns]
+
+        # strip dollar sign from Price column
+        budget.Price = pd.to_numeric(budget.Price.replace("[\$,]", "", regex=True))
+
+        # format Price column
+        budget.Price = budget.Price.astype(float).map("${:,.2f}".format)
+
         return [budget.to_dict("records"), columns]
 
     # update summary table
@@ -102,7 +110,7 @@ def main():
 
         return [summary_data, hidden_div_content]
 
-    # save and download data
+    # download data
     @app.callback(
         Output("download-link", "data"),
         Input("save-button", "n_clicks"),
@@ -118,14 +126,12 @@ def main():
             # append summary_df to budget_df
             df = pd.concat([budget_df, summary_df], ignore_index=True)
 
-            # convert combined dataframe to excel file
+            # convert combined dataframe to csv file
             csv_file = df.to_csv(index=False, encoding="utf-8")
 
             # create download link
             download_link = dict(
-                content=csv_file,
-                filename="travel_budget.csv",
-                type="text/csv",
+                content=csv_file, filename="travel_budget.csv", type="text/csv"
             )
 
             return download_link
