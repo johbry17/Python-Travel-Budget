@@ -69,8 +69,6 @@ def main():
         # define columns, make them editable
         columns = [{"name": col, "id": col, "editable": True} for col in budget.columns]
 
-        # strip dollar sign from Price column
-        budget.Price = pd.to_numeric(budget.Price.replace("[\$,]", "", regex=True))
 
         # format Price column
         budget.Price = budget.Price.astype(float).map("${:,.2f}".format)
@@ -86,6 +84,9 @@ def main():
     def update_summary_table(current_data):
         # convert current_data to dataframe
         df = pd.DataFrame(current_data)
+
+        # strip dollar sign (if extant) from Price column
+        df.Price = pd.to_numeric(df.Price.replace("[\$,]", "", regex=True), errors="coerce")
 
         # call functions to calculate total, 30% buffer, and grand total
         total = calc_total(df)
@@ -105,12 +106,15 @@ def main():
             }
         ).to_dict("records")
 
+        # format Price column as currency
+        df.Price = df.Price.map("${:,.2f}".format)
+
         # update hidden_div with current_data
         hidden_div_content = df.to_json(orient="split")
 
         return [summary_data, hidden_div_content]
 
-    # download data
+    # download csv
     @app.callback(
         Output("download-link", "data"),
         Input("save-button", "n_clicks"),
