@@ -171,7 +171,7 @@ def main():
                 budget = budget.iloc[:-1]
 
             # reformat Price column, in case of user chicanery in the budget table
-            if budget is not None and 'Price' in budget.columns:
+            if budget is not None and "Price" in budget.columns:
                 budget.Price = pd.to_numeric(
                     budget.Price.replace(r"[^\d.]", "", regex=True), errors="coerce"
                 )
@@ -196,7 +196,7 @@ def main():
 
         # for initial load, do nothing
         # if 'Price' column does not exist, return the empty df
-        if 'Price' not in df.columns:
+        if "Price" not in df.columns:
             # return df.to_dict('records')
             return dash.no_update
 
