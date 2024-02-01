@@ -21,11 +21,12 @@ def main():
                         "Are you sure you want to continue? All work will be lost."
                     ),
                     dbc.ModalFooter(
-                        html.Button(
+                        [html.Button(
                             "Proceed",
                             id="modal-proceed-button",
                             className="btn btn-primary",
-                        )
+                        ),
+                        html.Button("Cancel", id="modal-cancel-button", className="btn btn-secondary"),]
                     ),
                 ],
                 id="confirmation-modal",
@@ -71,9 +72,9 @@ def main():
                 },  # enable word wrap
             ),
             # buttons to add and delete rows
-            html.Br(),
             html.Button("Add a Row", id="add-row-button", n_clicks=0),
-            html.Button("Delete the Last Row", id="delete-row-button", n_clicks=0),
+            html.Button("Delete the Bottom Row", id="delete-row-button", n_clicks=0),
+            html.Br(),
             html.Br(),
             # summary table
             dash_table.DataTable(
@@ -113,6 +114,7 @@ def main():
         Output("confirmation-modal", "is_open"),
         # inputs any buttons clicked
         Input("modal-proceed-button", "n_clicks"),
+        Input("modal-cancel-button", "n_clicks"),
         Input("add-row-button", "n_clicks"),
         Input("delete-row-button", "n_clicks"),
         Input("radio-buttons", "value"),
@@ -125,6 +127,7 @@ def main():
     )
     def update_budget_table(
         proceed,
+        cancel,
         add_row,
         delete_row,
         radio_value,
@@ -157,6 +160,10 @@ def main():
                 [{"name": i, "id": i} for i in budget.columns],
                 False,
             )
+
+        # when the modal Cancel button is clicked, close the modal
+        elif triggered_button == "modal-cancel-button" and is_modal_open:
+            return dash.no_update, dash.no_update, False
 
         # else convert the current_data to a DataFrame, with options to add or delete rows
         else:
