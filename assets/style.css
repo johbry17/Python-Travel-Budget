@@ -1,0 +1,6 @@
+.center-table .dash-cell div.dash-cell-value {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+

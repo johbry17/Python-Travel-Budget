@@ -7,9 +7,9 @@ import dash_bootstrap_components as dbc
 
 
 def main():
-    app = Dash(
-        external_stylesheets=[dbc.themes.BOOTSTRAP],
-    )
+    external_stylesheets = [dbc.themes.BOOTSTRAP, "/assets/style.css"]
+
+    app = Dash(external_stylesheets=external_stylesheets)
 
     # layout of html page
     app.layout = html.Div(
@@ -21,12 +21,18 @@ def main():
                         "Are you sure you want to continue? All work will be lost."
                     ),
                     dbc.ModalFooter(
-                        [html.Button(
-                            "Proceed",
-                            id="modal-proceed-button",
-                            className="btn btn-primary",
-                        ),
-                        html.Button("Cancel", id="modal-cancel-button", className="btn btn-secondary"),]
+                        [
+                            html.Button(
+                                "Proceed",
+                                id="modal-proceed-button",
+                                className="btn btn-primary",
+                            ),
+                            html.Button(
+                                "Cancel",
+                                id="modal-cancel-button",
+                                className="btn btn-secondary",
+                            ),
+                        ]
                     ),
                 ],
                 id="confirmation-modal",
@@ -61,37 +67,80 @@ def main():
                 ],
             ),
             # budget table
-            dash_table.DataTable(
-                id="budget-table",
-                editable=True,
-                row_deletable=True,
-                style_table={"overflowX": "auto"},  # enable horizontal scrolling
-                style_cell={
-                    "whiteSpace": "normal",
-                    "height": "auto",
-                },  # enable word wrap
+            dbc.Row(
+                dbc.Col(
+                    dash_table.DataTable(
+                        id="budget-table",
+                        editable=True,
+                        row_deletable=True,
+                        style_table={
+                            "overflowX": "auto"
+                        },  # enable horizontal scrolling
+                        style_cell={
+                            "whiteSpace": "normal",
+                            "height": "auto",
+                        },  # enable word wrap
+                        style_data_conditional=[
+                            {"if": {"column_id": "Expense"}, "textAlign": "right"},
+                            {"if": {"column_id": "Price"}, "textAlign": "center"},
+                            {"if": {"column_id": "Notes"}, "textAlign": "left"},
+                        ],
+                    ),
+                    width=6,
+                    className="mx-auto",
+                )
             ),
             # buttons to add and delete rows
-            html.Button("Add a Row", id="add-row-button", n_clicks=0),
-            html.Button("Delete the Bottom Row", id="delete-row-button", n_clicks=0),
+            html.Div(
+                className="d-flex justify-content-center",
+                children=[
+                    html.Button("Add a Row", id="add-row-button", n_clicks=0),
+                    html.Button(
+                        "Delete the Bottom Row", id="delete-row-button", n_clicks=0
+                    ),
+                ],
+            ),
             html.Br(),
             html.Br(),
             # summary table
-            dash_table.DataTable(
-                id="summary-table",
-                columns=[
-                    {"name": "Expense", "id": "Expense"},
-                    {
-                        "name": "Price",
-                        "id": "Price",
-                        "type": "numeric",
-                        "format": FormatTemplate.money(2),
-                    },
-                    {"name": "Notes", "id": "Notes"},
-                ],
+            dbc.Row(
+                dbc.Col(
+                    dash_table.DataTable(
+                        id="summary-table",
+                        columns=[
+                            {"name": "Expense", "id": "Expense"},
+                            {
+                                "name": "Price",
+                                "id": "Price",
+                                "type": "numeric",
+                                "format": FormatTemplate.money(2),
+                            },
+                            {"name": "Notes", "id": "Notes"},
+                        ],
+                        style_table={
+                            "overflowX": "auto"
+                        },  # enable horizontal scrolling
+                        style_cell={
+                            "whiteSpace": "normal",
+                            "height": "auto",
+                        },  # enable word wrap
+                        style_data_conditional=[
+                            {"if": {"column_id": "Expense"}, "textAlign": "right"},
+                            {"if": {"column_id": "Price"}, "textAlign": "center"},
+                            {"if": {"column_id": "Notes"}, "textAlign": "left"},
+                        ],
+                    ),
+                    width=6,
+                    className="mx-auto",
+                )
             ),
             # save button
-            html.Button("Save and Download", id="save-button", n_clicks=0),
+            html.Div(
+                className="d-flex justify-content-center",
+                children=[
+                    html.Button("Save and Download", id="save-button", n_clicks=0),
+                ],
+            ),
             # download link
             dcc.Download(id="download-link"),
         ]
@@ -118,7 +167,7 @@ def main():
         Input("add-row-button", "n_clicks"),
         Input("delete-row-button", "n_clicks"),
         Input("radio-buttons", "value"),
-        Input("budget-table", "derived_virtual_data"),
+        Input("budget-table", "derived_virtual_data"),  # realtime data changes to table
         # states of the hidden selected radio button, budget table, and modal
         State("hidden-radio-store", "data"),
         State("budget-table", "data"),
@@ -153,7 +202,7 @@ def main():
             and button_chosen is not None
             and is_modal_open
         ):
-            budget = pd.read_csv(f"./resources/{button_chosen.replace(' ', '_')}.csv")
+            budget = pd.read_csv(f"./assets/{button_chosen.replace(' ', '_')}.csv")
             # return budget data and columns, and close the modal
             return (
                 budget.to_dict("records"),
