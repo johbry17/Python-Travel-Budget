@@ -1,13 +1,12 @@
 Expense,Price,Notes
-Transport to and from home airport,0,
-Flight,0,
-Transport to and from destination airport,0,
-Housing,0,
-Food,0,
-Other transportation,0,
-Laundry,0,
-Cell phone roaming fees,0,
-Shopping,0,
-Activities,0,
-Miscellaneous Buffer,0,Cause things are always more expensive than you think
-
+Transport to and from home airport,$0.00,
+Flight,$0.00,
+Transport to and from destination airport,$0.00,
+Housing,$0.00,
+Food,$0.00,
+Other transportation,$0.00,
+Laundry,$0.00,
+Cell phone roaming fees,$0.00,
+Shopping,$0.00,
+Activities,$0.00,
+Miscellaneous Buffer,$0.00,Cause things are always more expensive than you think

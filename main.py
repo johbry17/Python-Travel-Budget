@@ -12,6 +12,19 @@ def main():
     # layout of html page
     app.layout = html.Div(
         [
+            # modal to confirm user wants to switch budgets
+            dbc.Modal(
+                [
+                    dbc.ModalBody('Are you sure you want to continue? All work will be lost.'),
+                    dbc.ModalFooter(
+                        html.Button('Proceed', id='modal-proceed-button', className='btn btn-primary')
+                    ),
+                ],
+                id='confirmation-modal',
+                centered=True,
+            ),
+            # hidden input to store the radio button selected
+            dcc.Store(id='hidden-radio-store'),
             
             # header
             html.H1(
@@ -44,6 +57,7 @@ def main():
             # budget table
             dash_table.DataTable(
                 id="budget-table",
+                editable=True,
                 row_deletable=True,
                 style_table={"overflowX": "auto"}, # enable horizontal scrolling
                 style_cell={"whiteSpace": "normal", "height": "auto"}, # enable word wrap
@@ -69,58 +83,68 @@ def main():
             html.Button("Save and Download", id="save-button", n_clicks=0),
             # download link
             dcc.Download(id="download-link"),
-
-            # hidden div for storing temporary data
-            html.Div(id="hidden-div", style={"display": "none"}),
         ]
     )
 
+    # stores the selected radio button value
+    # so that button_chosen is not None when the modal-proceed-button is clicked
+    @app.callback(
+        Output("hidden-radio-store", "data"),
+        Input("radio-buttons", "value"),
+    )
+    def update_hidden_store(radio_value):
+        return radio_value
+
     # update budget table
     @app.callback(
+        # outputs budget table, budget table columns, and confirmation modal state
         Output("budget-table", "data"),
         Output("budget-table", "columns"),
-        Input("radio-buttons", "value"),
+        Output("confirmation-modal", "is_open"),
+        # inputs any buttons clicked
+        Input("modal-proceed-button", "n_clicks"),
         Input("add-row-button", "n_clicks"),
         Input("delete-row-button", "n_clicks"),
+        Input("radio-buttons", "value"),
+        # states of the hidden selected radio button, budget table, and modal
+        State("hidden-radio-store", "data"),
         State("budget-table", "data"),
+        State("confirmation-modal", "is_open"),
         prevent_initial_call=True,
     )
-    def update_budget_table(button_chosen, add_row, delete_row, current_data):
-        # check if button was chosen
-        # ctx = dash.callback_context
-        if ctx.triggered_id in ["radio-buttons"]:
-            # read in csv of selected budget
+    def update_budget_table(proceed, add_row, delete_row, radio_value, button_chosen, current_data, is_modal_open):
+        # get the button that was clicked, if any
+        triggered_button = ctx.triggered_id
+        # alternate, more verbose method that everyone seems to like better for explicitness
+        # ctx = dash.callback_context  
+        # triggered_button = ctx.triggered[0]['prop_id'].split('.')[0]
+
+        # when a radio button is selected, open the confirmation modal
+        if triggered_button == "radio-buttons":
+            return dash.no_update, dash.no_update, True
+
+        # when the modal Proceed button is clicked, read in the csv of the selected budget
+        elif triggered_button == "modal-proceed-button" and button_chosen is not None and is_modal_open:
             budget = pd.read_csv(f"./resources/{button_chosen.replace(' ', '_')}.csv")
+            # return budget data and columns, and close the modal
+            return budget.to_dict('records'), [{"name": i, "id": i} for i in budget.columns], False
+
+        # else convert the current_data to a DataFrame, with options to add or delete rows
         else:
             budget = pd.DataFrame(current_data)
-
-        # define columns, make them editable
-        columns = [{"name": col, "id": col, "editable": True} for col in budget.columns]
-
-        # strip dollar sign (if extant) from Price column
-        budget.Price = pd.to_numeric(budget.Price.replace(r"[^\d.]", "", regex=True), errors="coerce")
-
-        # format Price column as currency
-        budget.Price = budget.Price.astype(float).map("${:,.2f}".format)
-
-        # check which button was clicked
-        # ctx = dash.callback_context
-        triggered_button = ctx.triggered_id
-
-        if triggered_button:
+            # adds a new row to the budget
             if "add-row-button" in triggered_button:
                 new_row = {"Expense": "", "Price": "$0.00", "Notes": ""}
                 budget = pd.concat([budget, pd.DataFrame([new_row])], ignore_index=True)
-            if "delete-row-button" in triggered_button and len(current_data) > 1: # so that the last row can't be deleted
+            # deletes the last row from the budget, unless it's the only row
+            if "delete-row-button" in triggered_button and len(current_data) > 1:
                 budget = budget.iloc[:-1]
+            # return the budget data and columns, and do not change the modal
+            return budget.to_dict('records'), [{"name": i, "id": i} for i in budget.columns], dash.no_update 
 
-        return [budget.to_dict("records"), columns]
-        # return [current_data, columns]
-
-    # update summary table
+    # updates summary table, triggered by changes in the budget table
     @app.callback(
         Output("summary-table", "data"),
-        Output("hidden-div", "children"),
         Input("budget-table", "data"),
         prevent_initial_call=True,
     )
@@ -128,7 +152,7 @@ def main():
         # convert current_data to dataframe
         df = pd.DataFrame(data)
 
-        # strip any none digit input (if extant) from the Price column
+        # strips all non-digit characters from the Price column, and converts to numeric - for maths!
         df.Price = pd.to_numeric(df.Price.replace(r"[^\d.]", "", regex=True), errors="coerce")
 
         # call functions to calculate total, 30% buffer, and grand total
@@ -149,14 +173,11 @@ def main():
             }
         ).to_dict("records")
 
-        # format Price column as currency
-        df.Price = df.Price.map("${:,.2f}".format)
+        # re-format Price column as currency
+        # i bet i can return the df and auto-format the column in the layout
+        # df.Price = df.Price.map("${:,.2f}".format)
 
-        # update hidden_div with current_data
-        hidden_div_content = df.to_json(orient="split")
-
-        return [summary_data, hidden_div_content]
-        # return [summary_data]
+        return summary_data
 
     # download csv
     @app.callback(
@@ -174,7 +195,7 @@ def main():
             # append summary_df to budget_df
             df = pd.concat([budget_df, summary_df], ignore_index=True)
 
-            # reformat Price column, as I can't get the budget-table to update
+            # reformat Price column, in case of user chicanery in the budget table
             df.Price = pd.to_numeric(df.Price.replace(r"[^\d.]", "", regex=True), errors="coerce")
             df.Price = df.Price.astype(float).map("${:,.2f}".format)
 
