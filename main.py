@@ -1,11 +1,13 @@
 # import dependencies
-from dash import Dash, dcc, html, dash_table, callback, Input, Output, State
+from dash import Dash, dcc, html, dash_table, callback, Input, Output, State, ctx
+import dash
 from dash.dash_table import FormatTemplate
 import pandas as pd
+import dash_bootstrap_components as dbc
 
 
 def main():
-    app = Dash(__name__)
+    app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP],)
 
     # layout of html page
     app.layout = html.Div(
@@ -30,14 +32,29 @@ def main():
                             "Saint John Weeklong",
                         ],
                         inline=True,
-                        value="Template Budget",
+                        value="Template Budget", # uncomment to set default value
                         id="radio-buttons",
                         style={"textAlign": "center"},
                     )
                 ],
             ),
             # budget table
-            dash_table.DataTable(id="budget-table"),
+            dash_table.DataTable(
+                id="budget-table",
+                # columns=[
+                #     {"name": "Expense", "id": "Expense", "editable": True},
+                #     {"name": "Price", "id": "Price", "editable": True, "type": "numeric", "format": FormatTemplate.money(2)},
+                #     {"name": "Notes", "id": "Notes", "editable": True},
+                #     # Add a column for buttons
+                #     {"name": "Actions", "id": "button-column", "editable": False, "hideable": True},
+                # ],
+                editable=True,
+                row_deletable=True,
+                # style_table={"overflowX": "auto"},
+            ),
+            html.Br(),
+            html.Button("Add Row", id="add-row-button", n_clicks=0),
+            html.Button("Delete Row", id="delete-row-button", n_clicks=0),
             html.Br(),
             # summary table
             dash_table.DataTable(
@@ -48,12 +65,12 @@ def main():
                     {"name": "Notes", "id": "Notes"},
                 ],
             ),
-            # div for storing temporary data
-            html.Div(id="hidden-div", style={"display": "none"}),
             # save button
             html.Button("Save and Download", id="save-button", n_clicks=0),
             # download link
             dcc.Download(id="download-link"),
+            # hidden div for storing temporary data
+            html.Div(id="hidden-div", style={"display": "none"}),
         ]
     )
 
@@ -62,30 +79,61 @@ def main():
         Output("budget-table", "data"),
         Output("budget-table", "columns"),
         Input("radio-buttons", "value"),
+        Input("add-row-button", "n_clicks"),
+        Input("delete-row-button", "n_clicks"),
+        State("budget-table", "data"),
+        # prevent_initial_call=True,
     )
-    def update_budget_table(button_chosen):
-        # read in csv of selected budget
-        budget = pd.read_csv(f"./resources/{button_chosen.replace(' ', '_')}.csv")
-        # define columns, make them editable
-        columns = [{"name": col, "id": col, "editable": True} for col in budget.columns]
+    def update_budget_table(button_chosen, add_row, delete_row, current_data):
+        # check if button was chosen
+        if button_chosen and button_chosen != "Template Budget" or not current_data:
+            # read in csv of selected budget
+            budget = pd.read_csv(f"./resources/{button_chosen.replace(' ', '_')}.csv")
+            columns = [{"name": col, "id": col, "editable": True} for col in budget.columns]
+        else:
+            budget = pd.DataFrame(current_data)
+            columns = [{"name": col, "id": col, "editable": True} for col in budget.columns]
 
-        # format Price column
+        # define columns, make them editable
+        # columns = [{"name": col, "id": col, "editable": True} for col in budget.columns]
+
+        # strip dollar sign (if extant) from Price column
+        budget.Price = pd.to_numeric(budget.Price.replace("[\$,]", "", regex=True), errors="coerce")
+
+        # format Price column as currency
         budget.Price = budget.Price.astype(float).map("${:,.2f}".format)
 
+        # check which button was clicked
+        # ctx = dash.callback_context
+        triggered_button = ctx.triggered_id
+
+        # print("triggered_button Test:")
+        # print(triggered_button)
+
+        if triggered_button:
+            if "add-row-button" in triggered_button:
+                # new_row = pd.DataFrame({"Expense": [""], "Price": [0], "Notes": [""]})
+                new_row = {"Expense": "", "Price": 0, "Notes": ""}
+                budget = pd.concat([budget, pd.DataFrame([new_row])], ignore_index=True)
+            if "delete-row-button" in triggered_button and len(current_data) > 0:
+                budget = budget.iloc[:-1]
+
         return [budget.to_dict("records"), columns]
+        # return [current_data, columns]
 
     # update summary table
     @app.callback(
         Output("summary-table", "data"),
         Output("hidden-div", "children"),
         Input("budget-table", "data"),
+        # prevent_initial_call=True,
     )
-    def update_summary_table(current_data):
+    def update_summary_table(data):
         # convert current_data to dataframe
-        df = pd.DataFrame(current_data)
+        df = pd.DataFrame(data)
 
-        # strip dollar sign (if extant) from Price column
-        df.Price = pd.to_numeric(df.Price.replace("[\$,]", "", regex=True), errors="coerce")
+        # strip any none digit input (if extant) from the Price column
+        df.Price = pd.to_numeric(df.Price.replace("[^\d.]", "", regex=True), errors="coerce")
 
         # call functions to calculate total, 30% buffer, and grand total
         total = calc_total(df)
@@ -112,6 +160,7 @@ def main():
         hidden_div_content = df.to_json(orient="split")
 
         return [summary_data, hidden_div_content]
+        # return [summary_data]
 
     # download csv
     @app.callback(
@@ -129,10 +178,8 @@ def main():
             # append summary_df to budget_df
             df = pd.concat([budget_df, summary_df], ignore_index=True)
 
-            # strip dollar sign (if extant) from Price column
+            # reformat Price column, as I can't get the budget-table to update
             df.Price = pd.to_numeric(df.Price.replace("[\$,]", "", regex=True), errors="coerce")
-
-            # format Price column
             df.Price = df.Price.astype(float).map("${:,.2f}".format)
 
             # convert combined dataframe to csv file
