@@ -9,7 +9,7 @@ import re
 
 
 def main():
-    app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+    app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP, "assets/style.css"])
 
     # layout of html page
     app.layout = html.Div(
@@ -38,12 +38,21 @@ def main():
                 id="confirmation-modal",
                 centered=True,
             ),
-            # hidden input to store the radio button selected
-            dcc.Store(id="hidden-radio-store"),
             # header
-            html.H1(
-                "Travel Budget Planner",
-                style={"textAlign": "center", "color": "blue", "fontSize": 30},
+            html.Div(
+                children=[
+                    html.H1("Travel Budget Planner", style={"color": "white"}),
+                    html.P("Select a budget to get started", style={"color": "white", "font-size": "20px"}),
+                    html.H6("**Bryan's ridiculous budget planner - now for the masses!", style={"color": "white", "font-size": "12px"}),
+                ],
+                style={
+                "background-image": "url('/assets/background.jpg')",
+                "background-size": "cover",
+                "background-repeat": "no-repeat",
+                "background-position": "center center",
+                "text-align": "center",
+                "color": "white",
+                "padding": "50px",}
             ),
             # radio buttons to choose a budget
             html.Div(
@@ -62,10 +71,13 @@ def main():
                         inline=True,
                         # value="Template Budget", # uncomment to set default value
                         id="radio-buttons",
+                        inputStyle={"margin-left": "10px"},
                         style={"textAlign": "center"},
                     )
                 ],
             ),
+            # hidden input to store the radio button selected
+            dcc.Store(id="hidden-radio-store"),
             # budget table
             dbc.Card(
                 dbc.CardBody(
@@ -74,7 +86,7 @@ def main():
                             dash_table.DataTable(
                                 id="budget-table",
                                 editable=True,
-                                row_deletable=True,
+                                row_deletable=True, # cuidado!! danger!!
                                 style_table={
                                     "overflowX": "auto"
                                 },  # enable horizontal scrolling
@@ -82,6 +94,7 @@ def main():
                                     "whiteSpace": "normal",
                                     "height": "auto",# enable word wrap
                                     "border": "2px solid #888",
+                                    "font-family": "Helvetica Neue, sans-serif",
                                 },
                                 style_data_conditional=[
                                     {"if": {"column_id": "Expense"}, "textAlign": "right"},
@@ -104,9 +117,9 @@ def main():
             html.Div(
                 className="d-flex justify-content-center",
                 children=[
-                    html.Button("Add a Row", id="add-row-button", n_clicks=0),
+                    html.Button("Add a Row", id="add-row-button", n_clicks=0, style={"color": "green"}),
                     html.Button(
-                        "Delete the Bottom Row", id="delete-row-button", n_clicks=0
+                        "Delete the Bottom Row", id="delete-row-button", n_clicks=0, style={"color": "red"}
                     ),
                 ],
             ),
@@ -136,6 +149,7 @@ def main():
                                     "whiteSpace": "normal",
                                     "height": "auto", # enable word wrap
                                     "border": "2px solid #888",
+                                    "font-family": "Helvetica Neue, sans-serif",
                                 },
                                 style_data_conditional=[
                                     {"if": {"column_id": "Expense"}, "textAlign": "right"},
