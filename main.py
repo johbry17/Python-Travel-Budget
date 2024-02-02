@@ -278,7 +278,7 @@ def main():
 
         # closes the confirmation modal, and reads in the selected csv
         elif triggered_button == "modal-proceed-button" and is_modal_open:
-            budget = pd.read_csv(f"./assets/{button_chosen.replace(' ', '_')}.csv")
+            budget = pd.read_csv(f"./assets/csv/{button_chosen.replace(' ', '_')}.csv")
             return (
                 budget.to_dict("records"),
                 [{"name": i, "id": i} for i in budget.columns],
@@ -421,11 +421,11 @@ def main():
             ],
             layout=go.Layout(
                 title={
-                    "text": "Hover/click for details",
+                    "text": "Expense Breakdown:  Hover/click for details",
                     "x": 0.5,
                     "xanchor": "center",
                 },
-                showlegend=False,  # can't get it to work on mobile screens
+                showlegend=True,  # False for mobile if I ever Heroku this
                 annotations=[
                     dict(
                         x=0.5,
