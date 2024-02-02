@@ -1,17 +1,27 @@
 # import dependencies
-from dash import Dash, dcc, html, dash_table, callback, Input, Output, State, ctx
 import dash
+from dash import Dash, dcc, html, dash_table, callback, Input, Output, State, ctx
 from dash.dash_table import FormatTemplate
-import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
+import plotly.express as px
 import pandas as pd
 import re
 
 
 def main():
-    app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP, "assets/style.css"])
+    """
+    Main function to run the app.
+    First, it initializes the app, then it sets up the layout of the html page.
+    Next, it sets up the callbacks to update the budget table, summary table, and donut chart.
+    Finally, it initializes the app.
+    """
+    app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+    """
+    Initializes the app with the name of the module, and the external stylesheets to use.
+    Layout immediately below.
+    """
 
-    # layout of html page
     app.layout = html.Div(
         [
             # modal to confirm user wants to switch budgets
@@ -42,17 +52,24 @@ def main():
             html.Div(
                 children=[
                     html.H1("Travel Budget Planner", style={"color": "white"}),
-                    html.P("Select a budget to get started", style={"color": "white", "font-size": "20px"}),
-                    html.H6("**Bryan's ridiculous budget planner - now for the masses!", style={"color": "white", "font-size": "12px"}),
+                    html.P(
+                        "Select a budget to get started",
+                        style={"color": "white", "font-size": "20px"},
+                    ),
+                    html.H6(
+                        "**Bryan's ridiculous budget planner - now for the masses!",
+                        style={"color": "white", "font-size": "12px"},
+                    ),
                 ],
                 style={
-                "background-image": "url('/assets/background.jpg')",
-                "background-size": "cover",
-                "background-repeat": "no-repeat",
-                "background-position": "center center",
-                "text-align": "center",
-                "color": "white",
-                "padding": "50px",}
+                    "background-image": "url('/assets/background.jpg')",
+                    "background-size": "cover",
+                    "background-repeat": "no-repeat",
+                    "background-position": "center center",
+                    "text-align": "center",
+                    "color": "white",
+                    "padding": "50px",
+                },
             ),
             # radio buttons to choose a budget
             html.Div(
@@ -86,28 +103,32 @@ def main():
                             dash_table.DataTable(
                                 id="budget-table",
                                 editable=True,
-                                row_deletable=True, # cuidado!! danger!!
+                                row_deletable=True,  # cuidado!! danger!!
                                 style_table={
                                     "overflowX": "auto"
                                 },  # enable horizontal scrolling
                                 style_cell={
                                     "whiteSpace": "normal",
-                                    "height": "auto",# enable word wrap
+                                    "height": "auto",  # enable word wrap
                                     "border": "2px solid #888",
                                     "font-family": "Helvetica Neue, sans-serif",
                                 },
                                 style_data_conditional=[
-                                    {"if": {"column_id": "Expense"}, "textAlign": "right"},
-                                    {"if": {"column_id": "Price"}, "textAlign": "center"},
+                                    {
+                                        "if": {"column_id": "Expense"},
+                                        "textAlign": "right",
+                                    },
+                                    {
+                                        "if": {"column_id": "Price"},
+                                        "textAlign": "center",
+                                    },
                                     {"if": {"column_id": "Notes"}, "textAlign": "left"},
                                     {
                                         "if": {"row_index": "odd"},
-                                        "backgroundColor": "lightgrey"
+                                        "backgroundColor": "lightgrey",
                                     },
                                 ],
                             ),
-                            width=6,
-                            className="mx-auto",
                         )
                     ),
                 ),
@@ -117,9 +138,17 @@ def main():
             html.Div(
                 className="d-flex justify-content-center",
                 children=[
-                    html.Button("Add a Row", id="add-row-button", n_clicks=0, style={"color": "green"}),
                     html.Button(
-                        "Delete the Bottom Row", id="delete-row-button", n_clicks=0, style={"color": "red"}
+                        "Add a Row",
+                        id="add-row-button",
+                        n_clicks=0,
+                        style={"color": "green"},
+                    ),
+                    html.Button(
+                        "Delete the Bottom Row",
+                        id="delete-row-button",
+                        n_clicks=0,
+                        style={"color": "red"},
                     ),
                 ],
             ),
@@ -147,22 +176,28 @@ def main():
                                 },  # enable horizontal scrolling
                                 style_cell={
                                     "whiteSpace": "normal",
-                                    "height": "auto", # enable word wrap
+                                    "height": "auto",  # enable word wrap
                                     "border": "2px solid #888",
                                     "font-family": "Helvetica Neue, sans-serif",
                                 },
                                 style_data_conditional=[
-                                    {"if": {"column_id": "Expense"}, "textAlign": "right"},
-                                    {"if": {"column_id": "Price"}, "textAlign": "center"},
+                                    {
+                                        "if": {"column_id": "Expense"},
+                                        "textAlign": "right",
+                                    },
+                                    {
+                                        "if": {"column_id": "Price"},
+                                        "textAlign": "center",
+                                    },
                                     {"if": {"column_id": "Notes"}, "textAlign": "left"},
                                     {
-                                        "if": {"row_index": 1},
-                                        "backgroundColor": "lightgrey"
+                                        "if": {
+                                            "row_index": 1
+                                        },  # yeah, I know, it's a hack
+                                        "backgroundColor": "lightgrey",
                                     },
                                 ],
                             ),
-                            width=6,
-                            className="mx-auto",
                         )
                     ),
                 ),
@@ -177,23 +212,24 @@ def main():
             ),
             # download link
             dcc.Download(id="download-link"),
-            html.Br(),
-            html.Br(),
             # donut chart of expenses
             dcc.Graph(id="expense-donut-chart"),
         ]
     )
 
-    # stores the selected radio button value
-    # so that button_chosen is not None when the modal-proceed-button is clicked
+    # update hidden store with selected radio button value
     @app.callback(
         Output("hidden-radio-store", "data"),
         Input("radio-buttons", "value"),
     )
     def update_hidden_store(radio_value):
+        """
+        Update hidden store with selected radio button value...
+        ...so that button_chosen is not None when the modal-proceed-button is clicked.
+        """
         return radio_value
 
-    # update budget table
+    # updates budget table
     @app.callback(
         # outputs budget table, budget table columns, and confirmation modal state
         Output("budget-table", "data"),
@@ -223,73 +259,64 @@ def main():
         current_data,
         is_modal_open,
     ):
-        # get the button that was clicked, if any
+        """
+        Update budget table, budget table columns, and confirmation modal state...
+        ...based on the button clicked, the selected radio button, the current data, and the modal state.
+        If the radio button is selected, open the confirmation modal.
+        If the modal Proceed button is selected, read in the selected csv.
+        If the modal Cancel button is selected, do nothing.
+        The last conditional updates the budget in realtime, and autoformats the Price column.
+        With options to add or delete rows.
+        Return values in order are always budget data, budget columns, and modal state.
+        """
+        # get the button that was clicked, if any - ctx = dash.callback_context
         triggered_button = ctx.triggered_id
-        # alternate, more verbose method that everyone seems to like better for explicitness
-        # ctx = dash.callback_context
-        # triggered_button = ctx.triggered[0]['prop_id'].split('.')[0]
 
-        # when a radio button is selected, open the confirmation modal
+        # opens the confirmation modal
         if triggered_button == "radio-buttons":
             return dash.no_update, dash.no_update, True
 
-        # when the modal Proceed button is clicked, read in the csv of the selected budget
-        elif (
-            triggered_button == "modal-proceed-button"
-            and button_chosen is not None
-            and is_modal_open
-        ):
+        # closes the confirmation modal, and reads in the selected csv
+        elif triggered_button == "modal-proceed-button" and is_modal_open:
             budget = pd.read_csv(f"./assets/{button_chosen.replace(' ', '_')}.csv")
-            # return budget data and columns, and close the modal
             return (
                 budget.to_dict("records"),
                 [{"name": i, "id": i} for i in budget.columns],
                 False,
             )
 
-        # when the modal Cancel button is clicked, do nothing and close the modal
+        # does nothing but close the modal
         elif triggered_button == "modal-cancel-button" and is_modal_open:
             return dash.no_update, dash.no_update, False
 
-        # else convert the current_data to a DataFrame, with options to add or delete rows
-        # & autoformat the Price column, using derived_virtual_data (realtime data changes to table)
+        # for editing current table in realtime, with add/delete row buttons
         else:
             budget = pd.DataFrame(current_data)
-
-            # adds a new row to the budget
             if "add-row-button" in triggered_button:
-                new_row = {"Expense": "", "Price": "$0.00", "Notes": ""}
-                budget = pd.concat([budget, pd.DataFrame([new_row])], ignore_index=True)
-            # deletes the last row from the budget, unless it's the only row
+                budget = add_new_row(budget)
             if "delete-row-button" in triggered_button and len(current_data) > 1:
                 budget = budget.iloc[:-1]
-
-            # reformat Price column, in case of user chicanery in the budget table
-            if budget is not None and "Price" in budget.columns:
-                budget.Price = pd.to_numeric(
-                    budget.Price.replace(r"[^\d.]", "", regex=True), errors="coerce"
-                )
-                budget.Price = budget.Price.astype(float).map("${:,.2f}".format)
-
-            # return the budget data and columns, and do not change the modal
             return (
-                budget.to_dict("records"),
+                format_price(budget).to_dict("records"),
                 [{"name": i, "id": i} for i in budget.columns],
                 dash.no_update,
             )
 
-    # updates summary table, triggered by changes in the budget table
+    # updates summary table
     @app.callback(
         Output("summary-table", "data"),
         Input("budget-table", "data"),
         prevent_initial_call=True,
     )
     def update_summary_table(data):
-        # convert current_data to dataframe
+        """
+        Updates summary table based on the budget table data, first formatting the Price column...
+        ...the caling the subtotal, 30% buffer, and grand total functions.
+        And then returns the summary data as a DataFrame.
+        """
         df = pd.DataFrame(data)
 
-        # for initial load, do nothing
-        # if 'Price' column does not exist, return the empty df
+        # for initial load, do nothing, or it throws an attribute error
         if "Price" not in df.columns:
             return dash.no_update
 
@@ -299,15 +326,15 @@ def main():
         )
 
         # call functions to calculate total, 30% buffer, and grand total
-        total = calc_total(df)
-        thirty_percent = calc_thirty_percent(total)
-        grand_total = calc_grand_total(total, thirty_percent)
+        subtotal = calc_subtotal(df)
+        thirty_percent = calc_thirty_percent(subtotal)
+        grand_total = calc_grand_total(subtotal, thirty_percent)
 
         # create summary table
         summary_data = pd.DataFrame(
             {
-                "Expense": ["Total", "30% Buffer", "Grand Total"],
-                "Price": [total, thirty_percent, grand_total],
+                "Expense": ["Subtotal", "30% Buffer", "Grand Total"],
+                "Price": [subtotal, thirty_percent, grand_total],
                 "Notes": [
                     "Initial Estimate",
                     "Cause things are always WAY more expensive than you think",
@@ -318,7 +345,7 @@ def main():
 
         return summary_data
 
-    # to download csv
+    # downloads current budget as a csv
     @app.callback(
         Output("download-link", "data"),
         Input("save-button", "n_clicks"),
@@ -326,15 +353,18 @@ def main():
         State("summary-table", "data"),
     )
     def save_data(n_clicks, budget_data, summary_data):
+        """
+        Downloads current budget as a csv if the save button is clicked.
+        """
+        # set n_clicks above 0, or it'll download on initial load
         if n_clicks > 0:
-            # convert budget_data and summary_data to dataframes
             budget_df = pd.DataFrame(budget_data)
             summary_df = pd.DataFrame(summary_data)
 
-            # append summary_df to budget_df
+            # concatenate the df's
             df = pd.concat([budget_df, summary_df], ignore_index=True)
 
-            # convert combined dataframe to csv file
+            # convert combined df to csv file
             csv_file = df.to_csv(index=False, encoding="utf-8")
 
             # create download link
@@ -343,8 +373,8 @@ def main():
             )
 
             return download_link
-        
-    # callback to update donut chart
+
+    # updates donut chart
     @app.callback(
         Output("expense-donut-chart", "figure"),
         Input("budget-table", "data"),
@@ -352,7 +382,10 @@ def main():
         prevent_initial_call=True,
     )
     def update_donut_chart(budget_data, summary_data):
-        # if budget_data is empty (initial load), return an empty figure
+        """
+        Updates donut chart based on the budget table data and summary table data.
+        """
+        # if budget_data is empty (initial load), return an empty fig
         if not budget_data:
             return go.Figure()
 
@@ -360,75 +393,105 @@ def main():
         labels = [row["Expense"] for row in budget_data]
         values = [row["Price"] for row in budget_data]
 
-        # strip all non-digit chars from values, and convert to float
+        # regex price strings to floats
         values = [float(re.sub(r"[^\d.]", "", value)) for value in values]
 
-        # Add the buffer from the summary data
+        # add 30% buffer from the summary data
         labels.append("Now 23.1% Buffer")
-        buffer_value = next((row["Price"] for row in summary_data if row["Expense"] == "30% Buffer"), 0)
+        buffer_value = [
+            row["Price"] for row in summary_data if row["Expense"] == "30% Buffer"
+        ][0]
         values.append(buffer_value)
 
-        # Calculate the total amount
+        # calculate total and percentages
         total = sum(values)
-
-        # Calculate the percentages
         percentages = [value / total for value in values] if total != 0 else values
 
-        title=f"Breakdown of Expenses<br>${total:.2f} Total"
-
-        # Create the figure
-        figure = go.Figure(
+        # create fig
+        fig = go.Figure(
             data=[
                 go.Pie(
                     labels=labels,
                     values=percentages,
                     text=values,
-                    hole=.5,
+                    hole=0.5,
                     hovertemplate="%{label}:  $%{text:.2f}<extra></extra>",
                     textinfo="percent",
                 )
             ],
             layout=go.Layout(
-                title="Breakdown of Expenses",
-                showlegend=True,
+                title={
+                    "text": "Hover/click for details",
+                    "x": 0.5,
+                    "xanchor": "center",
+                },
+                showlegend=False,  # can't get it to work on mobile screens
                 annotations=[
                     dict(
                         x=0.5,
                         y=-0.1,
+                        xanchor="center",
                         showarrow=False,
                         text=f"Total: ${total:.2f}",
                         xref="paper",
                         yref="paper",
                         font=dict(
                             size=20,
-                        )
+                        ),
                     )
-                ]
+                ],
             ),
         )
 
-        return figure
+        return fig
 
     # initialize the app
     if __name__ == "__main__":
         app.run(debug=True)
 
 
-# function to calculate total
-def calc_total(df):
+def format_price(budget):
+    """
+    Format price from string to float, in case of user chichanery.
+    """
+    if "Price" in budget.columns:
+        budget.Price = pd.to_numeric(
+            budget.Price.replace(r"[^\d.]", "", regex=True), errors="coerce"
+        )
+        budget.Price = budget.Price.astype(float).map("${:,.2f}".format)
+    return budget
+
+
+def add_new_row(budget):
+    """
+    Add a new row to the budget table.
+    """
+    new_row = {"Expense": "", "Price": "$0.00", "Notes": ""}
+    budget.loc[len(budget)] = new_row
+    return budget
+
+
+def calc_subtotal(df):
+    """
+    Calculate the subtotal of the budget.
+    """
     df.Price = pd.to_numeric(df.Price, errors="coerce")
     df.Price = df.Price.astype(float)
     return df.Price.sum()
 
 
-# function to calculate 30% buffer
-def calc_thirty_percent(total):
-    return 0.3 * total
+def calc_thirty_percent(subtotal):
+    """
+    Calculate the 30% buffer of the budget.
+    """
+    return 0.3 * subtotal
 
 
-# function to calculate grand total
-def calc_grand_total(total, thirty_percent):
-    return total + thirty_percent
+def calc_grand_total(subtotal, thirty_percent):
+    """
+    Calculate the grand total of the budget.
+    """
+    return subtotal + thirty_percent
 
 
 if __name__ == "__main__":
