@@ -8,14 +8,14 @@ Development on this project has stopped.
 - [Usage](#usage)
 - [Gallery](#gallery)
 - [Rogues Gallery](#rogues-gallery)
-- [cs50Python Certificate](#cs50Python Certificate)
+- [cs50Python Certificate](#cs50Python-Certificate)
 - [References](#references)
 - [Acknowledgements](#acknowledgements)
 - [Author](#author)
 
 ## Description
 
-This project was developed as a final project for [cs50's Introduction to Programming with Python](https://cs50.harvard.edu/python/2022/weeks/0/). It provides a dashboard for building and exporting travel budgets, and includes example budgets and a donut chart for visualization.
+This project was developed as a final project for [cs50's Introduction to Programming with Python](https://cs50.harvard.edu/python/2022/weeks/0/). It provides a dashboard for building and exporting travel budgets, automatically summing totals and adding a 30% buffer, and includes example budgets and a donut chart for visualization.
 
 This project evolved from a few base requirements, namely that the main program must be a python project, rather obvious, with at least three functions outside of main that had accompanying unit tests in a separate file. This obviously impacted the design.
 
