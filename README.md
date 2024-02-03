@@ -23,13 +23,7 @@ As I've mostly focused on data science / analysis / visualization, coming up wit
 
 That lasted a hot second before I tossed the idea and went with Dash from Plotly. It was something I'd never used before - bonus points for learning something new! Programming html from python intrigued me. I could build a python project that had the user-friendliness of a webpage, much more visually appealing than tabulate boxes printing to the terminal. It also vastly increased the amount of time that I spent on this project.
 
-I hit a lot of walls along the way on this one.
-
-It took a bit to orient myself to programming in html with NOT html. Several times I tried to use the same Output in different callbacks, a big no-no to avoid triggering a race condition. I now know the difference between a modal (that's a thing?) and a popup. Figuring out how to save the selected radio button (hide it in a div for passing between callbacks) took some time. It took me a moment to wrap my head around the idea that a Dash state is like a session or a cookie. Something about the 'Add a Row' and 'Delete the Last Row' buttons took forever - it kept reloading the original cv, although I can't remember what now. All that on top of the usual kinks and mistakes - I'd constantly tweak something and get a 'DataFrame has no "Price" attribute error. I 'll document design choices better next time.
-
-But Dash has far friendly documentation that Python, so it wasn't too hard to learn. Another day, another five billion errors.
-
-But I figured it out. I started with loading the csv's and building the tables, than getting the math to work between the budget table and the grand total table. The download button was a cinch. Then adding in a modal to prevent users from accidentally changing their budget - a nod to defensive programming. And I got my logic down for automatically formatting the Price column every time with a little regex, also preventing user chicanery. And I threw in a plot at the end, just because. Coudn't get it to work for mobile, though. I shall worry about that if I Heroku it.
+I hit a lot of walls along the way on this one. But Dash has far friendly documentation that Python, so it wasn't too hard to learn. Another day, another five billion errors.
 
 Ideas for the future: I would clean up the formatting a lot, add options for what type of file is exports (Excel, Google Sheets, HTML, even SQL or JSON if I wanna go crazy). Maybe change the donut chart to a bar chart. Add an option to load a file.
 
