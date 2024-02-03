@@ -9,7 +9,6 @@ Development on this project has stopped.
 - [Gallery](#gallery)
 - [Rogues Gallery](#rogues-gallery)
 - [References](#references)
-- [Licenses](#licenses)
 - [Acknowledgements](#acknowledgements)
 - [Author](#author)
 
@@ -80,10 +79,6 @@ Saint John Summary and Plot:
 ## References
 
 Sample budgets provided by author
-
-## Licenses
-
-[Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/)
 
 ## Acknowledgements
 
