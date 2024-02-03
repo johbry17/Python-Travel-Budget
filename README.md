@@ -8,6 +8,7 @@ Development on this project has stopped.
 - [Usage](#usage)
 - [Gallery](#gallery)
 - [Rogues Gallery](#rogues-gallery)
+- [cs50Python Certificate](#cs50Python Certificate)
 - [References](#references)
 - [Acknowledgements](#acknowledgements)
 - [Author](#author)
@@ -75,6 +76,10 @@ Saint John Summary and Plot:
 ![Edinburgh Castle](./assets/images/Edinburgh%20Castle.jpg)
 
 ![Stereotypical Machu Picchu](./assets/images/mp.HEIC)
+
+## cs50Python Certificate
+
+![cs50Python Certificate](./assets/johns_bryan_CS50P_certificate.png)
 
 ## References
 
