@@ -17,7 +17,7 @@ Development on this project has stopped.
 
 This project was developed as a final project for [cs50's Introduction to Programming with Python](https://cs50.harvard.edu/python/2022/weeks/0/). It provides a dashboard for building and exporting travel budgets, automatically summing totals and adding a 30% buffer, and includes example budgets and a donut chart for visualization.
 
-This project evolved from a few base requirements, namely that the main program must be a python project, rather obvious, with at least three functions outside of main that had accompanying unit tests in a separate file. This obviously impacted the design.
+This project evolved from a few base requirements (see `Final Project Specifications.pdf`), namely that the main program must be a python project, rather obvious, with at least three functions outside of main that had accompanying unit tests in a separate file. This obviously impacted the design.
 
 As I've mostly focused on data science / analysis / visualization, coming up with a good, clean, command line python project stumped me for a bit. I decided I want to talk about travel stories - at least I'd enjoy the subject matter, and amuse my friends and family who've been subjected to my budget spreadsheets (and then thanked me for the awesome vacations). I replicated my spreadsheets, building a budget app that ran from the command line using tabulate and Pandas DataFrames to display info on the command line.
 
